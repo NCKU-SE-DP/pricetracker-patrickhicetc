@@ -57,6 +57,7 @@ export default {
     height: 100%;
     text-align: start;
     padding: 3em;
+    word-wrap: break-word;
 }
 .time{
     color: #888;
@@ -89,5 +90,10 @@ export default {
     font-size: 2em;
     cursor: pointer;
     color: #888;
+}
+@media (max-width: 768px) {
+    .content{
+        padding: 0.5em;
+    }
 }
 </style>

@@ -96,7 +96,6 @@ export default {
 .trending-table {
     margin-top: 2em;
 }
-
 table {
     width: 100%;
     border-collapse: collapse;

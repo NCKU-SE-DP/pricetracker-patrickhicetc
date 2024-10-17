@@ -16,7 +16,7 @@
             </div>
             <div v-if="selectedProduct" class="visualize">
                 <TrendingChart v-if="selectedProduct" :data="selectedProduct"></TrendingChart>
-                <TrendingTable v-if="selectedProduct" :data="selectedProduct"></TrendingTable>
+                <TrendingTable v-if="selectedProduct" :data="selectedProduct" class="Table"></TrendingTable>
             </div>
         </div>
     </div>
@@ -84,7 +84,9 @@ export default {
     box-sizing: border-box;
     width: 100%;
 }
-
+.Table{
+    overflow-x: auto;
+}
 .content {
     margin-top: 2em;
     background-color: #fff;
@@ -98,7 +100,11 @@ export default {
     display: flex;
     justify-content: flex-start;
 }
-
+@media (max-width: 768px) {
+    .selects {
+        flex-direction: column;
+    }
+}
 .selects>select {
     padding: .5em;
     font-size: 1.1em;

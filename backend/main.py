@@ -147,7 +147,7 @@ def add_new(news_data):
 
 news_channelId = 2
 first_page = 1
-def get_new_info(search_term, is_initial=False):
+def  (search_term, is_initial=False):
     """
     get new
 

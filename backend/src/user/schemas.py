@@ -5,3 +5,7 @@ class PromptRequest(BaseModel):
 
 class NewsSumaryRequestSchema(BaseModel):
     content: str
+
+class UserAuthSchema(BaseModel):
+    username: str
+    password: str

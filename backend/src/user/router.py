@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, AnyHttpUrl
 from ..auth.dependencies import session_opener
 from ..auth.service import check_user_password_is_correct, create_access_token, pwd_context, authenticate_user_token
 from ..model import User
+from .schemas import UserAuthSchema
 
 router = APIRouter(
     prefix = "/user",
@@ -25,9 +26,7 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-class UserAuthSchema(BaseModel):
-    username: str
-    password: str
+
 @router.post("/register")
 def create_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
     """create user"""

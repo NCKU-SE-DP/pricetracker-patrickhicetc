@@ -7,7 +7,7 @@ import json
 from ..auth.dependencies import session_opener
 from ..auth.service import authenticate_user_token
 from ..model import NewsArticle
-from .service import get_article_upvote_details, get_new_info, _id_counter, toggle_upvote
+from .service import get_article_upvote_details, get_new_info, _id_counter, toggle_upvote, openai_client
 from ..user.schemas import PromptRequest, NewsSumaryRequestSchema
 
 router = APIRouter(
@@ -55,31 +55,15 @@ def read_user_news(
 async def search_news(request: PromptRequest):
     prompt = request.prompt
     news_list = []
-    messagesToAi = [
-        {
-            "role": "system",
-            "content": "你是一個關鍵字提取機器人，用戶將會輸入一段文字，表示其希望看見的新聞內容，請提取出用戶希望看見的關鍵字，請截取最重要的關鍵字即可，避免出現「新聞」、「資訊」等混淆搜尋引擎的字詞。(僅須回答關鍵字，若有多個關鍵字，請以空格分隔)",
-        },
-        {"role": "user", "content": f"{prompt}"},
-    ]
-
-    completion = OpenAI(api_key="xxx").chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=messagesToAi,
-    )
-    keywords = completion.choices[0].message.content
-    # should change into simple factory pattern
+    keywords = openai_client.extract_keywords(prompt)
     news_items = get_new_info(keywords, is_initial=False)
     for news in news_items:
         try:
             response = requests.get(news["titleLink"])
             soup = BeautifulSoup(response.text, "html.parser")
-            # 標題
             title = soup.find("h1", class_="article-content__title").text
             time = soup.find("time", class_="article-content__time").text
-            # 定位到包含文章内容的 <section>
             content_section = soup.find("section", class_="article-content__editor")
-
             paragraphs = [
                 p.text
                 for p in content_section.find_all("p")
@@ -103,23 +87,9 @@ async def news_summary(
         payload: NewsSumaryRequestSchema, u=Depends(authenticate_user_token)
 ):
     response = {}
-    messagesToAi = [
-        {
-            "role": "system",
-            "content": "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})",
-        },
-        {"role": "user", "content": f"{payload.content}"},
-    ]
-
-    completion = OpenAI(api_key="xxx").chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=messagesToAi,
-    )
-    completion_result = completion.choices[0].message.content
-    if completion_result:
-        completion_result = json.loads(completion_result)
-        response["summary"] = completion_result["影響"]
-        response["reason"] = completion_result["原因"]
+    completion_result = openai_client.get_summary(payload.content)
+    response["summary"] = completion_result["影響"]
+    response["reason"] = completion_result["原因"]
     return response
 
 @router.post("/{article_id}/upvote")

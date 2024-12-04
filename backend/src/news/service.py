@@ -10,9 +10,12 @@ from sqlalchemy import delete, insert, select
 from ..model import NewsArticle, user_news_association_table
 from ..crawler.udn_crawler import UDNCrawler
 from ..crawler.crawler_base import NewsWithSummary
+from .config import NewsSettings
+from ..llm_client.openai_client import OpenAIClient
 
 udn_crawler = UDNCrawler()
 _id_counter = itertools.count(start=1000000)
+openai_client = OpenAIClient(_api_key = NewsSettings.OPENAI_KEY)
 
 def add_new(news_data):
     """
@@ -42,18 +45,7 @@ def get_new(is_initial=False):
     news_data = get_new_info("價格", is_initial=is_initial)
     for news in news_data:
         title = news.title
-        messagesToAi = [
-            {
-                "role": "system",
-                "content": "你是一個關聯度評估機器人，請評估新聞標題是否與「民生用品的價格變化」相關，並給予'high'、'medium'、'low'評價。(僅需回答'high'、'medium'、'low'三個詞之一)",
-            },
-            {"role": "user", "content": f"{title}"},
-        ]
-        ai_response = OpenAI(api_key="xxx").chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messagesToAi,
-        )
-        relevance = ai_response.choices[0].message.content
+        relevance = openai_client.get_relevance_assessment(title)
         if relevance == "high":
             news_details = udn_crawler.parse(news.url)
             news_details = NewsWithSummary(
@@ -64,20 +56,7 @@ def get_new(is_initial=False):
                 summary=completion_result["影響"],
                 reason=completion_result["原因"],
             )
-            messagesToAi = [
-                {
-                    "role": "system",
-                    "content": "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})",
-                },
-                {"role": "user", "content": " ".join(news_details.content)},
-            ]
-
-            completion = OpenAI(api_key="xxx").chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messagesToAi,
-            )
-            completion_result = completion.choices[0].message.content
-            completion_result = json.loads(completion_result)
+            completion_result = openai_client.get_summary("".join(news_details.content))
             news_details.summary = completion_result["影響"]
             news_details.reason = completion_result["原因"]
             add_new(news_details)

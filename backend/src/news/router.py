@@ -7,8 +7,8 @@ import json
 from ..auth.dependencies import session_opener
 from ..auth.service import authenticate_user_token
 from ..model import NewsArticle
-from .service import get_article_upvote_details, get_new_info, _id_counter, toggle_upvote, openai_client
-from ..user.schemas import PromptRequest, NewsSumaryRequestSchema
+from .service import get_article_upvote_details, get_new_info, _id_counter, toggle_upvote, openai_client, anthropic_client
+from .schemas import PromptRequest, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
 
 router = APIRouter(
     prefix = "/news",
@@ -100,3 +100,16 @@ def upvote_article(
 ):
     message = toggle_upvote(article_id, user.id, db)
     return {"message": message}
+
+@router.post("/news_summary_custom_model")
+async def news_summary_custom_model(
+        payload: NewsSumaryCustomModelSchema, u=Depends(authenticate_user_token)
+):
+    response = {}
+    if payload.ai_model == "anthropic":
+        completion_result = anthropic_client.get_summary(payload.content)
+    else:
+        completion_result = openai_client.get_summary(payload.content)
+    response["summary"] = completion_result["影響"]
+    response["reason"] = completion_result["原因"]
+    return response

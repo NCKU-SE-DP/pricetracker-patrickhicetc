@@ -10,12 +10,14 @@ from sqlalchemy import delete, insert, select
 from ..model import NewsArticle, user_news_association_table
 from ..crawler.udn_crawler import UDNCrawler
 from ..crawler.crawler_base import NewsWithSummary
-from .config import NewsSettings
+from ..config import Config
 from ..llm_client.openai_client import OpenAIClient
+from ..llm_client.anthropic_client import AnthropicClient
 
 udn_crawler = UDNCrawler()
 _id_counter = itertools.count(start=1000000)
-openai_client = OpenAIClient(_api_key = NewsSettings.OPENAI_KEY)
+openai_client = OpenAIClient(api_key = Config.OpenAI.OPENAI_KEY)
+anthropic_client = AnthropicClient(api_key = Config.Anthropic.ANTHROPIC_KEY)
 
 def add_new(news_data):
     """

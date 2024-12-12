@@ -110,18 +110,9 @@ def test_read_user_news(test_user, test_token, test_articles):
     assert json_response[1]["is_upvoted"] is False
 
 def mock_openai(mocker, return_content):
-    mock_openai_client = mocker.patch('src.news.router.OpenAI')
+    mock_openai_client = mocker.patch('src.llm_client.openai_client.OpenAIClient._get_response', autospec=True)
 
-    mock_message = Mock()
-    mock_message.content = return_content
-
-    mock_choice = Mock()
-    mock_choice.message = mock_message
-
-    mock_completion = Mock()
-    mock_completion.choices = [mock_choice]
-
-    mock_openai_client.return_value.chat.completions.create.return_value = mock_completion
+    mock_openai_client.return_value = return_content
 
     return mock_openai_client
 
@@ -163,7 +154,7 @@ def test_news_summary(mocker, test_token):
 
     request_body = NewsSumaryRequestSchema(content="Test news content")
     response = client.post("/api/v1/news/news_summary", json=request_body.dict(), headers=headers)
-
+    
     assert response.status_code == 200
     json_response = response.json()
     assert json_response["summary"] == "test impact"

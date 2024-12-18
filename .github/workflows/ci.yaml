@@ -40,7 +40,9 @@ jobs:
 
       - name: Run integration tests (with mock DB)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_KEY }}
+
         run: |
           cd backend
           pytest tests/integration --cov=src --cov-report=xml --disable-warnings

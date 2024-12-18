@@ -9,7 +9,7 @@ load_dotenv(dotenv_path)
 class Config:
 
     class GlobalSettings(BaseSettings):
-        SENTRY_DSN: str = "https://4001ffe917ccb261aa0e0c34026dc343@o4505702629834752.ingest.us.sentry.io/4507694792704000"
+        SENTRY_DSN: str = "https://79ba84419197d3dbaa0fe0968b8a7408@o4508454865993728.ingest.us.sentry.io/4508454875234304"
         TRACES_SAMPLE_RATE: float = 1.0
         PROFILES_SAMPLE_RATE: float = 1.0
         FASTAPI_PREFIX: str = "/api/v1"

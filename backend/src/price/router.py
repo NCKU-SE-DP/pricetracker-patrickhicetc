@@ -14,9 +14,6 @@ def get_necessities_prices(
         category=Query(None), commodity=Query(None)
 ):
     try:
-        if not category and not commodity:
-            logger.warning("No parameters provided for category or commodity.")
-            raise HTTPException(status_code=400, detail="At least one parameter (category or commodity) must be provided.")
         response = requests.get(
             "https://opendata.ey.gov.tw/api/ConsumerProtection/NecessitiesPrice",
             params={"CategoryName": category, "Name": commodity},

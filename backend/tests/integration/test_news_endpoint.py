@@ -8,7 +8,7 @@ from src.main import app
 from src.model import Base, User, NewsArticle, user_news_association_table
 from src.auth.dependencies import session_opener
 from src.auth.service import pwd_context
-from src.user.schemas import NewsSumaryRequestSchema, PromptRequest
+from src.news.schemas import NewsSumaryRequestSchema, PromptRequest
 from unittest.mock import Mock
 
 

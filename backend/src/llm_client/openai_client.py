@@ -9,4 +9,3 @@ class OpenAIClient(LLMClientTemplate):
         # self.model = "openai:gpt-4o"
         self.model = "openai:gpt-3.5-turbo"
 
-    

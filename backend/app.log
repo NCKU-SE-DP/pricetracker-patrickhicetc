@@ -1,0 +1,9 @@
+2024-12-18 16:02:21,290 - logger - ERROR - Login failed: 'NoneType' object has no attribute 'hashed_password'
+2024-12-18 16:02:22,480 - logger - ERROR - Login failed: 'NoneType' object has no attribute 'hashed_password'
+2024-12-18 16:02:22,989 - logger - ERROR - Login failed: 'NoneType' object has no attribute 'hashed_password'
+2024-12-18 16:02:23,469 - logger - ERROR - Login failed: 'NoneType' object has no attribute 'hashed_password'
+2024-12-18 16:02:23,921 - logger - ERROR - Login failed: 'NoneType' object has no attribute 'hashed_password'
+2024-12-18 16:04:08,301 - logger - ERROR - Register failed: (sqlite3.IntegrityError) UNIQUE constraint failed: users.username
+[SQL: INSERT INTO users (username, hashed_password) VALUES (?, ?)]
+[parameters: ('string', '$2b$12$KxXoSuuQwry2RwrWsTzVOuRwz0mJECRH3AdTkbjvnmqueJ09qGhEW')]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)

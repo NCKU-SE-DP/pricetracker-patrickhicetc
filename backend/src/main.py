@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from .model import NewsArticle
 from .database import engine
-from .config import GlobalSettings
+from .config import Config
 from .news.service import get_new
 from .news.router import router as news_router
 from .user.router import router as user_router
@@ -14,9 +14,9 @@ from .price.router import router as price_router
 
 
 sentry_sdk.init(
-    dsn = GlobalSettings().SENTRY_DSN,
-    traces_sample_rate = GlobalSettings().TRACES_SAMPLE_RATE,
-    profiles_sample_rate = GlobalSettings().PROFILES_SAMPLE_RATE,
+    dsn = Config.GlobalSettings().SENTRY_DSN,
+    traces_sample_rate = Config.GlobalSettings().TRACES_SAMPLE_RATE,
+    profiles_sample_rate = Config.GlobalSettings().PROFILES_SAMPLE_RATE,
 )
 
 app = FastAPI()
@@ -46,6 +46,6 @@ def start_scheduler():
 def shutdown_scheduler():
     Scheduler.shutdown()
 
-app.include_router(news_router, prefix = GlobalSettings().FASTAPI_PREFIX)
-app.include_router(user_router, prefix = GlobalSettings().FASTAPI_PREFIX)
-app.include_router(price_router, prefix = GlobalSettings().FASTAPI_PREFIX)
+app.include_router(news_router, prefix = Config.GlobalSettings().FASTAPI_PREFIX)
+app.include_router(user_router, prefix = Config.GlobalSettings().FASTAPI_PREFIX)
+app.include_router(price_router, prefix = Config.GlobalSettings().FASTAPI_PREFIX)

@@ -29,21 +29,22 @@ def read_news(db=Depends(session_opener)):
     """
     try:
         news = db.query(NewsArticle).order_by(NewsArticle.time.desc()).all()
-        if not news:
-            logger.info("No news articles found.")
-        result = []
-        for news in news:
-            upvotes, upvoted = get_article_upvote_details(news.id, None, db)
-            result.append(
-                {**news.__dict__, "upvotes": upvotes, "is_upvoted": upvoted}
-            )
-        return result
     except SQLAlchemyError as db_error:
         logger.error(f"Failed to read news: {str(db_error)}")
         raise HTTPException(status_code=500, detail="Database query failed.")
     except Exception as e:
         logger.error(f"Failed to read news: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error reading news: {str(e)}")
+    if not news:
+        logger.info("No news articles found.")
+    result = []
+    for news in news:
+        upvotes, upvoted = get_article_upvote_details(news.id, None, db)
+        result.append(
+            {**news.__dict__, "upvotes": upvotes, "is_upvoted": upvoted}
+        )
+    return result
+
 
 @router.get("/user_news")
 def read_user_news(
@@ -52,9 +53,16 @@ def read_user_news(
 ):
     try:
         news_articles = db.query(NewsArticle).order_by(NewsArticle.time.desc()).all()
-        if not news_articles:
-            logger.info("No news articles for user")
-        articles_with_upvotes = []
+    except SQLAlchemyError as db_error:
+        logger.error(f"Failed to fetch user news: {str(db_error)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch user news from database.")
+    except Exception as e:
+        logger.error(f"Failed to fetch user news: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error reading user news: {str(e)}")
+    if not news_articles:
+        logger.info("No news articles for user")
+    articles_with_upvotes = []
+    try:
         for article in news_articles:
             upvotes, upvoted = get_article_upvote_details(article.id, user.id, db)
             articles_with_upvotes.append(
@@ -64,13 +72,13 @@ def read_user_news(
                     "is_upvoted": upvoted,
                 }
             )
-        return articles_with_upvotes
     except SQLAlchemyError as db_error:
-        logger.error(f"Failed to fetch user news: {str(db_error)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch user news from database.")
+        logger.error(f"Failed to fetch upvote details: {str(db_error)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch upvote details.")
     except Exception as e:
-        logger.error(f"Failed to fetch user news: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error reading user news: {str(e)}")
+        logger.error(f"Unexpected error occurred while processing articles: {str(e)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while processing articles.")
+    return articles_with_upvotes
 
 @router.post("/search_news")
 async def search_news(request: PromptRequest):
@@ -84,45 +92,53 @@ async def search_news(request: PromptRequest):
     for news in news_items:
         try:
             response = requests.get(news["titleLink"])
+            response.raise_for_status()
+        except requests.RequestException as req_error:
+            logger.error(f"Failed to fetch article {news['titleLink']}: {str(req_error)}")
+            continue
+        try:
             soup = BeautifulSoup(response.text, "html.parser")
             title = soup.find("h1", class_="article-content__title").text
             time = soup.find("time", class_="article-content__time").text
             content_section = soup.find("section", class_="article-content__editor")
-            if not title or not time or not content_section:
-                logger.warning("Missing fields in article")
+        except Exception as parse_error:
+            logger.error(f"Failed to parse article {news['titleLink']}: {str(parse_error)}")
+            continue
+        if not title or not time or not content_section:
+            logger.warning("Missing fields in article")
+        try:
             paragraphs = [
                 p.text
                 for p in content_section.find_all("p")
                 if p.text.strip() != "" and "▪" not in p.text
             ]
-            detailed_news = {
-                "url": news["titleLink"],
-                "title": title,
-                "time": time,
-                "content": paragraphs,
-            }
-            detailed_news["content"] = " ".join(detailed_news["content"])
-            detailed_news["id"] = next(_id_counter)
-            news_list.append(detailed_news)
-        except RequestException as req_error:
-            logger.error(f"Failed to search news: {str(req_error)}")
-        except Exception as e:
-            logger.error(f"Failed to search news: {str(e)}")
+        except Exception as content_error:
+            logger.error(f"Failed to extract content for article {news['titleLink']}: {str(content_error)}")
+            continue
+        detailed_news = {
+            "url": news["titleLink"],
+            "title": title,
+            "time": time,
+            "content": paragraphs,
+        }
+        detailed_news["content"] = " ".join(detailed_news["content"])
+        detailed_news["id"] = next(_id_counter)
+        news_list.append(detailed_news)
     return sorted(news_list, key=lambda x: x["time"], reverse=True)
 
 @router.post("/news_summary")
 async def news_summary(
         payload: NewsSumaryRequestSchema, u=Depends(authenticate_user_token)
 ):
+    response = {}
     try:
-        response = {}
         completion_result = openai_client.get_summary(payload.content)
-        response["summary"] = completion_result["影響"]
-        response["reason"] = completion_result["原因"]
-        return response
     except Exception as e:
         logger.error(f"Failed to generate summary: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating summary: {str(e)}")
+    response["summary"] = completion_result["影響"]
+    response["reason"] = completion_result["原因"]
+    return response
 
 @router.post("/{article_id}/upvote")
 def upvote_article(
@@ -146,15 +162,15 @@ def upvote_article(
 async def news_summary_custom_model(
         payload: NewsSumaryCustomModelSchema, u=Depends(authenticate_user_token)
 ):
+    response = {}
     try:
-        response = {}
         if payload.ai_model == "anthropic":
             completion_result = anthropic_client.get_summary(payload.content)
         else:
             completion_result = openai_client.get_summary(payload.content)
-        response["summary"] = completion_result["影響"]
-        response["reason"] = completion_result["原因"]
-        return response
     except Exception as e:
         logger.error(f"Failed to generate custom model summary: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error in custom model summary: {str(e)}")
+    response["summary"] = completion_result["影響"]
+    response["reason"] = completion_result["原因"]
+    return response

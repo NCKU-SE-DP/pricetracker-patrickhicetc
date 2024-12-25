@@ -8,5 +8,3 @@ class OpenAIClient(LLMClientTemplate):
         self.client = ai.Client({"openai": {"api_key": self.api_key}})
         # self.model = "openai:gpt-4o"
         self.model = "openai:gpt-3.5-turbo" 
-
-    
